@@ -1,15 +1,10 @@
 
 from fastapi import FastAPI
 
-app= FastAPI()
-
-item = []
+api= FastAPI()
 
 # GET, POST, PUT, DELETE
 
-@app.get("/")
+@api.get("/")
 def index():
     return {"message": "Hello, World!"}
-
-@app.get("/")
-def create_item(item: str)
