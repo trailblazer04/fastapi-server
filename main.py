@@ -1,5 +1,6 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI 
+from fastapi.responses import HTMLResponse
 
 api= FastAPI()
 
@@ -7,4 +8,4 @@ api= FastAPI()
 
 @api.get("/")
 def index():
-    return {"message": "Hello, World!"}
+    return HTMLResponse("<h1>Welcome to the FastAPI application!</h1>")
