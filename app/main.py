@@ -1,9 +1,9 @@
 
 import psycopg2
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException # for error handling
+from contextlib import asynccontextmanager
 
-app = FastAPI()
-
+# connect to the PostgreSQL DB - DBngin
 conn = psycopg2.connect(
     host="localhost",
     port=5432, # DBngin port
@@ -13,8 +13,8 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-@app.on_event("startup")
-def init():
+@asynccontextmanager
+async def lifespan(app: FastAPI): # replaced deprecated @app.on_event("startup")
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -23,12 +23,26 @@ def init():
     );
     """)
     conn.commit()
+    yield # continues the app startup
+
+    cur.close()
+    conn.close()
+
+app = FastAPI(lifespan=lifespan)
+
+@app.get("/")
+def home():
+    return {"message": "Welcome to the local-db-psql-fastapi app!"}
 
 @app.post("/add")
 def add_user(name: str, email: str):
-    cur.execute("INSERT INTO users (name, email) VALUES (%s, %s);", (name, email))
-    conn.commit()
-    return {"message": "User added"}
+    try:
+        cur.execute("INSERT INTO users (name, email) VALUES (%s, %s);", (name, email))
+        conn.commit()
+        return {"message": "User added"}
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        raise HTTPException(status_code=400, detail="Email already exists")
 
 @app.get("/users")
 def get_users():
