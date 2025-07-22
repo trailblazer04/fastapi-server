@@ -1,6 +1,6 @@
 
 import psycopg2
-from fastapi import FastAPI, HTTPException # for error handling
+from fastapi import FastAPI, HTTPException, status # for error handling and status codes
 from contextlib import asynccontextmanager
 
 # connect to the PostgreSQL DB - DBngin
@@ -13,6 +13,7 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
+# FastAPI app with lifespan management
 @asynccontextmanager
 async def lifespan(app: FastAPI): # replaced deprecated @app.on_event("startup")
     cur.execute("""
@@ -34,7 +35,7 @@ app = FastAPI(lifespan=lifespan)
 def home():
     return {"message": "Welcome to the local-db-psql-fastapi app!"}
 
-@app.post("/add")
+@app.post("/add", status_code=status.HTTP_201_CREATED)
 def add_user(name: str, email: str):
     try:
         cur.execute("INSERT INTO users (name, email) VALUES (%s, %s);", (name, email))
