@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: leo
+      POSTGRES_PASSWORD: secret12345
+      POSTGRES_DB: local_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - local_db_data:/var/lib/postgresql/data
+  
+  fastapi:
+    build: .
+    container_name: fastapi_app
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=local_db
+      - DB_USER=leo
+      - DB_PASS=secret123
+    volumes:
+      - .:/app
+
+volumes:
+  local_db_data:
