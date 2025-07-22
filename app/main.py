@@ -1,15 +1,15 @@
-import os
+
 import psycopg2
 from fastapi import FastAPI
 
 app = FastAPI()
 
 conn = psycopg2.connect(
-    host=os.getenv("DB_HOST", "localhost"),
-    port=os.getenv("DB_PORT", 5432),
-    user=os.getenv("DB_USER", "leo"),
-    password=os.getenv("DB_PASSWORD", "secret12345"),
-    database=os.getenv("DB_NAME", "local_db")
+    host="localhost",
+    port=5432, # DBngin port
+    user="leo",
+    password="secret12345",
+    database="local_db"
 )
 cur = conn.cursor()
 
