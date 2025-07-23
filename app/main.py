@@ -1,17 +1,23 @@
 
 import psycopg2
-from fastapi import FastAPI, HTTPException, status # for error handling and status codes
+from fastapi import FastAPI, HTTPException, status, Request # for error handling and status codes and request handling
 from contextlib import asynccontextmanager
+from pydantic import BaseModel # importing pydantic
 
 # connect to the PostgreSQL DB - DBngin
 conn = psycopg2.connect(
-    host="localhost",
+    host="db",
     port=5432, # DBngin port
     user="leo",
     password="secret12345",
     database="local_db"
 )
 cur = conn.cursor()
+
+# Creating a Pydantic model for user data
+class User(BaseModel):
+    name: str
+    email: str
 
 # FastAPI app with lifespan management
 @asynccontextmanager
@@ -36,9 +42,9 @@ def home():
     return {"message": "Welcome to the local-db-psql-fastapi app!"}
 
 @app.post("/add", status_code=status.HTTP_201_CREATED)
-def add_user(name: str, email: str):
+def add_user(user: User):
     try:
-        cur.execute("INSERT INTO users (name, email) VALUES (%s, %s);", (name, email))
+        cur.execute("INSERT INTO users (name, email) VALUES (%s, %s);", (user.name, user.email))
         conn.commit()
         return {"message": "User added"}
     except psycopg2.errors.UniqueViolation:
