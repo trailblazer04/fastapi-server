@@ -1,64 +1,45 @@
 
-import psycopg2
-from fastapi import FastAPI, HTTPException, status, Request # for error handling and status codes and request handling
-from contextlib import asynccontextmanager
-from pydantic import BaseModel, EmailStr, constr # importing pydantic and emailstr and constr for validation
+from fastapi import FastAPI, HTTPException, status, Depends # for error handling and status codes and request handling and dependency injection
+from sqlalchemy.orm import Session # for ORM session management
+from . import models, schemas, database # importing models, schemas, and database modules
 
-# connect to the PostgreSQL DB - DBngin
-conn = psycopg2.connect(
-    host="db",
-    port=5432, # DBngin port
-    user="leo",
-    password="secret12345",
-    database="local_db"
-)
-cur = conn.cursor()
+# Create the database tables if they do not exist
+models.Base.metadata.create_all(bind=database.engine) # for creating Pydantic models
 
-# Creating a Pydantic model for user data
-class User(BaseModel):
-    name: constr(min_length=1, max_length=50)  # name must be at least 1 character long and at most 50 characters
-    email: EmailStr  # email must be a valid email format
+app = FastAPI()
 
-# FastAPI app with lifespan management
-@asynccontextmanager
-async def lifespan(app: FastAPI): # replaced deprecated @app.on_event("startup")
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL
-    );
-    """)
-    conn.commit()
-    yield # continues the app startup
+# Dependency to get the database session
+def get_db():
+    db = database.SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-    cur.close()
-    conn.close()
-
-app = FastAPI(lifespan=lifespan)
-
+# Root endpoint with a welcome message
 @app.get("/")
 def home():
     return {"message": "Welcome to the local-db-psql-fastapi app!"}
 
-
-@app.post("/add", status_code=status.HTTP_201_CREATED)
-def add_user(user: User):
-    try:
-        cur.execute(
-            "INSERT INTO users (name, email) VALUES (%s, %s);", 
-            (user.name, user.email)
-        )
-        conn.commit()
-        return {"message": "User added"}
-    except psycopg2.errors.UniqueViolation:
-        conn.rollback()
+# Endpoint to add a new user
+@app.post("/add", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if db_user:
         raise HTTPException(status_code=400, detail="Email already exists")
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/users")
-def get_users():
-    cur.execute("SELECT * FROM users;")
-    return {"users": cur.fetchall()}
+    # Create a new user instance
+    new_user = models.User(name=user.name, email=user.email)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return new_user
+   
+# Endpoint to get all users
+@app.get("/users/{user_id}", response_model=schemas.UserResponse)
+def read_users(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user  # SQLAlchemy instance; Pydantic with `from_attributes=True` will serialize it
