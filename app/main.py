@@ -24,6 +24,7 @@ def home():
 # Endpoint to add a new user
 @app.post("/add", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    print("Received user:", user) # Debugging print statement to check received user data
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already exists")
