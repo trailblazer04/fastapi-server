@@ -7,9 +7,8 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.101.0",
     "psycopg2-binary>=2.9.10",
-    "pydantic[email,timezone]>=2.11.7",
+    "pydantic[email]>=2.11.7",
+    "python-dotenv>=1.1.1",
     "sqlalchemy>=2.0.41",
+    "uvicorn>=0.35.0",
 ]
-
-[tool.uv.sources]
-pydantic = { git = "https://github.com/pydantic/pydantic", rev = "main" }
