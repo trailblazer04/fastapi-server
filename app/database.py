@@ -7,4 +7,4 @@ from .env import env
 engine = create_engine(env.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+Base = declarative_base() 

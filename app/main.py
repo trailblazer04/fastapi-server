@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session # for ORM session management
 from . import models, schemas, database # importing models, schemas, and database modules
 
 # Create the database tables if they do not exist
-models.Base.metadata.create_all(bind=database.engine) # for creating Pydantic models
+#models.Base.metadata.create_all(bind=database.engine) # for creating Pydantic models
 
 app = FastAPI()
 
