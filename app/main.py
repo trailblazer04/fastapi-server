@@ -1,16 +1,15 @@
 
 from fastapi import FastAPI, HTTPException, status, Depends # for error handling and status codes and request handling and dependency injection
-from sqlalchemy.orm import Session # for ORM session management
-from . import models, schemas, database # importing models, schemas, and database modules
+from sqlmodel import SQLModel, Session, select # for SQLAlchemy ORM session management
+from .models import User # importing the User model and UserCreate schema for request validation
+from .database import engine, get_session # importing the database engine and session management function
 
-# Create the database tables if they do not exist
-#models.Base.metadata.create_all(bind=database.engine) # for creating Pydantic models
 
 app = FastAPI()
 
 # Dependency to get the database session
 def get_db():
-    db = database.SessionLocal()
+    db = get_session()
     try:
         yield db
     finally:
@@ -22,25 +21,23 @@ def home():
     return {"message": "Welcome to the local-db-psql-fastapi app!"}
 
 # Endpoint to add a new user
-@app.post("/add", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+@app.post("/add", response_model=User, status_code=status.HTTP_201_CREATED)
+def create_user(user: User, session: Session = Depends(get_session)):
     print("Received user:", user) # Debugging print statement to check received user data
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_user:
+    statement = select(User).where(User.email == user.email)
+    existing = session.exec(statement).first() # Check if user already exists
+    if existing:
         raise HTTPException(status_code=400, detail="Email already exists")
+    new_user = User(name=user.name, email=user.email, address=user.address) # Create a new User instance
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+    return new_user # Return the newly created user
 
-    # Create a new user instance
-    new_user = models.User(name=user.name, email=user.email)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    return new_user
-   
 # Endpoint to get all users
-@app.get("/users/{user_id}", response_model=schemas.UserResponse)
-def read_users(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
+@app.get("/users/{user_id}", response_model=User)
+def get_users(user_id: int, session: Session = Depends(get_session)):
+    user = session.get(User, user_id) # Fetch user by ID
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user  # SQLAlchemy instance; Pydantic with `from_attributes=True` will serialize it
+    return user  # Return the user if found

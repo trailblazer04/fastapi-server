@@ -1,10 +1,12 @@
 # DB connection 
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlmodel import SQLModel, create_engine, Session
 from .env import env 
 
-engine = create_engine(env.DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_engine(env.DATABASE_URL, echo=True)
 
-Base = declarative_base() 
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+        

@@ -1,7 +1,6 @@
 from logging.config import fileConfig
 
-from app.database import declarative_base
-from sqlalchemy import create_engine
+from app.models import SQLModel
 from app.database import engine  # adjust path as needed
 
 
@@ -21,8 +20,8 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from app import models
-target_metadata = models.Base.metadata
+
+target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -42,7 +41,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url", declarative_base)
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,

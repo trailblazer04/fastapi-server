@@ -1,12 +1,10 @@
-# SQLAlchemy models
+# SQLAlchemy models Changed to SQLModel style
 
-from sqlalchemy import Column, Integer, String 
-from .database import Base
+from sqlmodel import SQLModel, Field
+from typing import Optional
 
-class User(Base):
-    __tablename__ = "users"
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    address = Column(String, nullable=True)  # Optional field for address
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    email: str
+    address: str
