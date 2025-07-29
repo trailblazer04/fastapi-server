@@ -1,8 +1,9 @@
 
 from fastapi import FastAPI, HTTPException, status, Depends # for error handling and status codes and request handling and dependency injection
-from sqlmodel import SQLModel, Session, select # for SQLAlchemy ORM session management
+from sqlmodel import SQLModel, Session, select #  for SQLModel ORM and session management
 from .models import User # importing the User model and UserCreate schema for request validation
 from .database import engine, get_session # importing the database engine and session management function
+from .schemas import UserCreate, UserResponse # importing the Pydantic schemas for request and response validation
 
 
 app = FastAPI()
@@ -22,7 +23,7 @@ def home():
 
 # Endpoint to add a new user
 @app.post("/add", response_model=User, status_code=status.HTTP_201_CREATED)
-def create_user(user: User, session: Session = Depends(get_session)):
+def create_user(user: UserCreate, session: Session = Depends(get_session)):
     print("Received user:", user) # Debugging print statement to check received user data
     statement = select(User).where(User.email == user.email)
     existing = session.exec(statement).first() # Check if user already exists
